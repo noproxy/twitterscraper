@@ -77,8 +77,11 @@ class Tweet:
         ] if soup_imgs else []
 
         # --- videos
-        video_div = tweet_div.find('div', 'PlayableMedia-container')
-        video_url = video_div.find('a')['href'] if video_div else ''
+        video_div = tweet_div.find('div', 'AdaptiveMedia-videoContainer')
+        if video_div:
+            video_url = ''
+        else:
+            video_url = video_div.find('a')['href'] if video_div else 'https://twitter.com/' + tweet_url
         has_media = True if img_urls or video_url else False
 
         # update 'links': eliminate 'video_url' from 'links' for duplicate
@@ -132,9 +135,9 @@ class Tweet:
         tweets = soup.find_all('li', 'js-stream-item')
         if tweets:
             for tweet in tweets:
-                try:
+                # try:
                     yield cls.from_soup(tweet)
-                except AttributeError:
-                    pass  # Incomplete info? Discard!
-                except TypeError:
-                    pass  # Incomplete info? Discard!
+                # except AttributeError:
+                #     pass  # Incomplete info? Discard!
+                # except TypeError as error:
+                #     pass  # Incomplete info? Discard!

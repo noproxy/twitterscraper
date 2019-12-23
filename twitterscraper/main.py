@@ -6,8 +6,12 @@ import json
 import argparse
 import collections
 import datetime as dt
+import os
 from os.path import isfile
 from pprint import pprint
+from urllib import request
+
+from twitterscraper import Tweet
 from twitterscraper.query import query_tweets
 from twitterscraper.query import query_tweets_from_user
 from twitterscraper.query import query_user_info
@@ -32,6 +36,7 @@ class JSONEncoder(json.JSONEncoder):
 
         return json.JSONEncoder.default(self, obj)
 
+
 def valid_date(s):
     try:
         return dt.datetime.strptime(s, "%Y-%m-%d").date()
@@ -39,11 +44,12 @@ def valid_date(s):
         msg = "Not a valid date: '{0}'.".format(s)
         raise argparse.ArgumentTypeError(msg)
 
+
 def main():
     try:
         parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter,
-            description=__doc__
-        )
+                                         description=__doc__
+                                         )
 
         parser.add_argument("query", type=str, help="Advanced twitter query")
         parser.add_argument("-o", "--output", type=str, default="tweets.json",
@@ -57,14 +63,14 @@ def main():
                                  "This may take a while. You can increase the number of parallel"
                                  "processes depending on the computational power you have.")
         parser.add_argument("-c", "--csv", action='store_true',
-                                help="Set this flag if you want to save the results to a CSV format.")
+                            help="Set this flag if you want to save the results to a CSV format.")
         parser.add_argument("-u", "--user", action='store_true',
                             help="Set this flag to if you want to scrape tweets from a specific user"
                                  "The query should then consist of the profilename you want to scrape without @")
         parser.add_argument("--profiles", action='store_true',
-                            help="Set this flag to if you want to scrape profile info of all the users where you" 
-                            "have previously scraped from. After all of the tweets have been scraped it will start"
-                            "a new process of scraping profile pages.")
+                            help="Set this flag to if you want to scrape profile info of all the users where you"
+                                 "have previously scraped from. After all of the tweets have been scraped it will start"
+                                 "a new process of scraping profile pages.")
         parser.add_argument("--lang", type=str, default=None,
                             help="Set this flag if you want to query tweets in \na specific language. You can choose from:\n"
                                  "en (English)\nar (Arabic)\nbn (Bengali)\n"
@@ -79,18 +85,21 @@ def main():
                                  "ur (Urdu)\nvi (Vietnamese)\n"
                                  "zh-cn (Chinese Simplified)\n"
                                  "zh-tw (Chinese Traditional)"
-                                 )
+                            )
         parser.add_argument("-d", "--dump", action="store_true",
                             help="Set this flag if you want to dump the tweets \nto the console rather than outputting to a file")
         parser.add_argument("-ow", "--overwrite", action="store_true",
                             help="Set this flag if you want to overwrite the existing output file.")
         parser.add_argument("-bd", "--begindate", type=valid_date, default="2006-03-21",
-                            help="Scrape for tweets starting from this date. Format YYYY-MM-DD. \nDefault value is 2006-03-21", metavar='\b')
+                            help="Scrape for tweets starting from this date. Format YYYY-MM-DD. \nDefault value is 2006-03-21",
+                            metavar='\b')
         parser.add_argument("-ed", "--enddate", type=valid_date, default=dt.date.today(),
-                            help="Scrape for tweets until this date. Format YYYY-MM-DD. \nDefault value is the date of today.", metavar='\b')
-        parser.add_argument("-p", "--poolsize", type=int, default=20, help="Specify the number of parallel process you want to run. \n"
-                            "Default value is set to 20. \nYou can change this number if you have more computing power available. \n"
-                            "Set to 1 if you dont want to run any parallel processes.", metavar='\b')
+                            help="Scrape for tweets until this date. Format YYYY-MM-DD. \nDefault value is the date of today.",
+                            metavar='\b')
+        parser.add_argument("-p", "--poolsize", type=int, default=20,
+                            help="Specify the number of parallel process you want to run. \n"
+                                 "Default value is set to 20. \nYou can change this number if you have more computing power available. \n"
+                                 "Set to 1 if you dont want to run any parallel processes.", metavar='\b')
         args = parser.parse_args()
 
         if isfile(args.output) and not args.dump and not args.overwrite:
@@ -98,14 +107,14 @@ def main():
             exit(-1)
 
         if args.all:
-            args.begindate = dt.date(2006,3,1)
+            args.begindate = dt.date(2006, 3, 1)
 
         if args.user:
-            tweets = query_tweets_from_user(user = args.query, limit = args.limit)
+            tweets = query_tweets_from_user(user=args.query, limit=args.limit)
         else:
-            tweets = query_tweets(query = args.query, limit = args.limit,
-                              begindate = args.begindate, enddate = args.enddate,
-                              poolsize = args.poolsize, lang = args.lang)
+            tweets = query_tweets(query=args.query, limit=args.limit,
+                                  begindate=args.begindate, enddate=args.enddate,
+                                  poolsize=args.poolsize, lang=args.lang)
 
         if args.dump:
             pprint([tweet.__dict__ for tweet in tweets])
@@ -142,3 +151,27 @@ def main():
                     json.dump(list_users_info, output, cls=JSONEncoder)
     except KeyboardInterrupt:
         logger.info("Program interrupted by user. Quitting...")
+
+
+def foo(user_id: str):
+    work_dir = '/Users/yiyazhou/Projects/Configurations/work/twitter/twitterscraper/build/outputs'
+    user_dir = work_dir + '/' + user_id
+    os.makedirs(user_dir, exist_ok=True)
+
+    tweet: Tweet
+    tweets = query_tweets_from_user(user_id)
+    with open(user_dir + "/tweets.json", "w", encoding="utf-8") as output:
+        json.dump(tweets, output, ensure_ascii=False, cls=JSONEncoder)
+    for tweet in tweets:
+        img_url: str
+        for img_url in tweet.img_urls:
+            img_file = user_dir + img_url[img_url.rindex('/'):]
+            if not os.path.exists(img_file):
+                request.urlretrieve(img_url, img_file)
+
+        # if tweet.video_url:
+        #    print(tweet.video_url)
+
+
+if __name__ == '__main__':
+    foo('nekoocattt')
