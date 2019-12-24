@@ -10,8 +10,9 @@ import os
 from os.path import isfile
 from pprint import pprint
 from urllib import request
+from urllib.error import URLError
 
-from twitterscraper import Tweet
+from twitterscraper import Tweet, User
 from twitterscraper.query import query_tweets
 from twitterscraper.query import query_tweets_from_user
 from twitterscraper.query import query_user_info
@@ -153,8 +154,8 @@ def main():
         logger.info("Program interrupted by user. Quitting...")
 
 
-def foo(user_id: str):
-    work_dir = '/Users/yiyazhou/Projects/Configurations/work/twitter/twitterscraper/build/outputs'
+def download_user(user_id: str):
+    work_dir = '/Users/toxzcp/Projects/Configurations/work/twitter'
     user_dir = work_dir + '/' + user_id
     os.makedirs(user_dir, exist_ok=True)
 
@@ -162,16 +163,44 @@ def foo(user_id: str):
     tweets = query_tweets_from_user(user_id)
     with open(user_dir + "/tweets.json", "w", encoding="utf-8") as output:
         json.dump(tweets, output, ensure_ascii=False, cls=JSONEncoder)
+
+    videos = []
     for tweet in tweets:
         img_url: str
         for img_url in tweet.img_urls:
             img_file = user_dir + img_url[img_url.rindex('/'):]
             if not os.path.exists(img_file):
-                request.urlretrieve(img_url, img_file)
+                retry = 5
+                while retry > 0:
+                    try:
+                        logger.info("download "+img_url+", retry = "+str(retry))
+                        request.urlretrieve(img_url, img_file)
+                        break
+                    except URLError:
+                        retry = retry - 1
+                        pass
 
-        # if tweet.video_url:
-        #    print(tweet.video_url)
+        if tweet.video_url:
+            videos.append(tweet.video_url + "\n")
+
+    with open(user_dir + "/videos.txt", "a", encoding="utf-8") as video:
+        video.writelines(videos)
+
+
+def get_follower(user: str):
+    info: User = query_user_info(user)
+    return info.followers
 
 
 if __name__ == '__main__':
-    foo('nekoocattt')
+    # logger.setLevel(21)
+    lines = open('/Users/toxzcp/Projects/Configurations/work/twitter/users.txt', 'r', encoding='utf-8').readlines()
+
+    for line in lines:
+        if line:
+            if line.startswith('@'):
+                line = line[1:]
+
+            line = line.strip()
+            logger.log(25, "download user @" + line)
+            download_user(line)

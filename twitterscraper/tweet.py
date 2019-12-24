@@ -8,10 +8,10 @@ from coala_utils.decorators import generate_ordering
 @generate_ordering('timestamp', 'id', 'text', 'user', 'replies', 'retweets', 'likes')
 class Tweet:
     def __init__(
-        self, screen_name, username, user_id, tweet_id, tweet_url, timestamp,
-        timestamp_epochs, text, text_html, links, hashtags, has_media, img_urls,
-        video_url, likes, retweets, replies, is_replied, is_reply_to,
-        parent_tweet_id, reply_to_users
+            self, screen_name, username, user_id, tweet_id, tweet_url, timestamp,
+            timestamp_epochs, text, text_html, links, hashtags, has_media, img_urls,
+            video_url, likes, retweets, replies, is_replied, is_reply_to,
+            parent_tweet_id, reply_to_users
     ):
         # user name & id
         self.screen_name = screen_name
@@ -67,7 +67,7 @@ class Tweet:
             for atag in soup_html.find_all('a', class_='twitter-timeline-link')
             if 'pic.twitter' not in atag.text  # eliminate picture
         ]
-        hashtags = [tag.strip('#')for tag in re.findall(r'#\w+', text)]
+        hashtags = [tag.strip('#') for tag in re.findall(r'#\w+', text)]
 
         # tweet media
         # --- imgs
@@ -78,10 +78,11 @@ class Tweet:
 
         # --- videos
         video_div = tweet_div.find('div', 'AdaptiveMedia-videoContainer')
-        if video_div:
+        if not video_div:
             video_url = ''
         else:
-            video_url = video_div.find('a')['href'] if video_div else 'https://twitter.com/' + tweet_url
+            video_url = 'https://twitter.com' + tweet_url
+
         has_media = True if img_urls or video_url else False
 
         # update 'links': eliminate 'video_url' from 'links' for duplicate
@@ -114,9 +115,8 @@ class Tweet:
             reply_to_users = []
         else:
             is_reply_to = True
-            soup_reply_to_users = \
-                tweet_div.find('div', 'ReplyingToContextBelowAuthor') \
-                .find_all('a')
+            drt = tweet_div.find('div', 'ReplyingToContextBelowAuthor')
+            soup_reply_to_users = drt.find_all('a') if drt else ''
             reply_to_users = [{
                 'screen_name': user.text.strip('@'),
                 'user_id': user['data-user-id']
@@ -136,8 +136,8 @@ class Tweet:
         if tweets:
             for tweet in tweets:
                 # try:
-                    yield cls.from_soup(tweet)
-                # except AttributeError:
-                #     pass  # Incomplete info? Discard!
-                # except TypeError as error:
-                #     pass  # Incomplete info? Discard!
+                yield cls.from_soup(tweet)
+            # except AttributeError:
+            #     pass  # Incomplete info? Discard!
+            # except TypeError as error:
+            #     pass  # Incomplete info? Discard!
