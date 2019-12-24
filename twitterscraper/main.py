@@ -155,7 +155,7 @@ def main():
 
 
 def download_user(user_id: str):
-    work_dir = '/Users/toxzcp/Projects/Configurations/work/twitter'
+    work_dir = '../build/outputs'
     user_dir = work_dir + '/' + user_id
     os.makedirs(user_dir, exist_ok=True)
 
@@ -194,7 +194,7 @@ def get_follower(user: str):
 
 if __name__ == '__main__':
     # logger.setLevel(21)
-    lines = open('/Users/toxzcp/Projects/Configurations/work/twitter/users.txt', 'r', encoding='utf-8').readlines()
+    lines = open('../../users.txt', 'r', encoding='utf-8').readlines()
 
     for line in lines:
         if line:

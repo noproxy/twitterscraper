@@ -45,6 +45,9 @@ class Tweet:
     def from_soup(cls, tweet):
         tweet_div = tweet.find('div', 'tweet')
 
+        if not tweet_div:
+            raise EOFError
+
         # user name & id
         screen_name = tweet_div["data-screen-name"].strip('@')
         username = tweet_div["data-name"]
@@ -135,8 +138,10 @@ class Tweet:
         tweets = soup.find_all('li', 'js-stream-item')
         if tweets:
             for tweet in tweets:
-                # try:
-                yield cls.from_soup(tweet)
+                try:
+                    yield cls.from_soup(tweet)
+                except EOFError:
+                    pass
             # except AttributeError:
             #     pass  # Incomplete info? Discard!
             # except TypeError as error:
