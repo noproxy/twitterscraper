@@ -59,10 +59,10 @@ class Tweet:
         _timestamp = tweet.find('span', '_timestamp')
         if _timestamp:
             timestamp_epochs = int(_timestamp['data-time'])
-            timestamp = ''
+            timestamp = datetime.utcfromtimestamp(timestamp_epochs)
         else:
             timestamp_epochs = ''
-            timestamp = datetime.utcfromtimestamp(timestamp_epochs)
+            timestamp = ''
 
         # tweet text
         soup_html = tweet_div \
