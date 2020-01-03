@@ -17,6 +17,8 @@ from twitterscraper.query import query_tweets
 from twitterscraper.query import query_tweets_from_user
 from twitterscraper.query import query_user_info
 from twitterscraper.ts_logger import logger
+from multiprocessing import Pool
+from functools import partial
 
 
 class JSONEncoder(json.JSONEncoder):
@@ -154,6 +156,22 @@ def main():
         logger.info("Program interrupted by user. Quitting...")
 
 
+def download_tw(tweet: Tweet, user_dir: str):
+    img_url: str
+    for img_url in tweet.img_urls:
+        img_file = user_dir + img_url[img_url.rindex('/'):]
+        if not os.path.exists(img_file):
+            retry = 5
+            while retry > 0:
+                try:
+                    logger.info("download " + img_url + ", retry = " + str(retry))
+                    request.urlretrieve(img_url, img_file)
+                    break
+                except URLError:
+                    retry = retry - 1
+                    pass
+
+
 def download_user(user_id: str):
     work_dir = '../build/outputs'
     user_dir = work_dir + '/' + user_id
@@ -165,21 +183,11 @@ def download_user(user_id: str):
         json.dump(tweets, output, ensure_ascii=False, cls=JSONEncoder)
 
     videos = []
-    for tweet in tweets:
-        img_url: str
-        for img_url in tweet.img_urls:
-            img_file = user_dir + img_url[img_url.rindex('/'):]
-            if not os.path.exists(img_file):
-                retry = 5
-                while retry > 0:
-                    try:
-                        logger.info("download "+img_url+", retry = "+str(retry))
-                        request.urlretrieve(img_url, img_file)
-                        break
-                    except URLError:
-                        retry = retry - 1
-                        pass
+    pool_size = 16
+    pool = Pool(pool_size)
+    pool.map(partial(download_tw, user_dir=user_dir), tweets)
 
+    for tweet in tweets:
         if tweet.video_url:
             videos.append(tweet.video_url + "\n")
 

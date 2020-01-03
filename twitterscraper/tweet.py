@@ -56,8 +56,13 @@ class Tweet:
         # tweet basic data
         tweet_id = tweet_div["data-tweet-id"]  # equal to 'data-item-id'
         tweet_url = tweet_div["data-permalink-path"]
-        timestamp_epochs = int(tweet.find('span', '_timestamp')['data-time'])
-        timestamp = datetime.utcfromtimestamp(timestamp_epochs)
+        _timestamp = tweet.find('span', '_timestamp')
+        if _timestamp:
+            timestamp_epochs = int(_timestamp['data-time'])
+            timestamp = ''
+        else:
+            timestamp_epochs = ''
+            timestamp = datetime.utcfromtimestamp(timestamp_epochs)
 
         # tweet text
         soup_html = tweet_div \
