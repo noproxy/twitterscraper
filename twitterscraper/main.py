@@ -17,7 +17,7 @@ from twitterscraper.query import query_tweets
 from twitterscraper.query import query_tweets_from_user
 from twitterscraper.query import query_user_info
 from twitterscraper.ts_logger import logger
-from multiprocessing import Pool
+from multiprocessing.pool import ThreadPool
 from functools import partial
 
 
@@ -184,7 +184,7 @@ def download_user(user_id: str):
 
     videos = []
     pool_size = 16
-    pool = Pool(pool_size)
+    pool = ThreadPool(pool_size)
     pool.map(partial(download_tw, user_dir=user_dir), tweets)
 
     for tweet in tweets:
